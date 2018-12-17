@@ -1,3 +1,12 @@
+;; TODO Wow. Make it sensible. Differentiate between a "basic" block
+;; and a "not basic" block.
+;;
+;; TODO Add other control structures (e.g. when, while) implemented in
+;; terms of a general structure (e.g. if?)
+;;
+;; TODO Collect successive basic blocks into a new block type, which
+;; consists of basic blocks and possibly ends in a control-type block.
+
 (defpackage :lisp-random.cfg
   (:use :common-lisp))
 
