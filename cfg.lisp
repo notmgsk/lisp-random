@@ -19,8 +19,43 @@
                     (if e2
                         (= s1)
                         (= s2))
-                    (= s3))
-                (= s4)))
+                    (if e3
+                        (if e4
+                            (= s3))
+                        (= s4)))
+                (= s5)))
+
+(defun make-random-cfg (max-nest max-depth)
+  (let* ((if-prob 0.5)
+         (if-single-prob 0.25)
+         (stop-prob 0.1))
+    (labels ((make-if (e)
+               (decf max-nest)
+               (prog1
+                   (list 'if
+                         e
+                         (build-random-ir)
+                         (build-random-ir))
+                 (incf max-nest)))
+             (make-if-single (e)
+               (decf max-nest)
+               (prog1 
+                   (list 'if e (build-random-ir))
+                 (incf max-nest)))
+             (make-= (s1)
+               (decf max-depth)
+               (list '= s1))
+             (build-random-ir ()
+               (if (and (not (zerop max-nest))
+                        (< (random 1.0) if-prob))
+                   (if (< (random 1.0) if-single-prob)
+                       (make-if-single (string (gensym "e")))
+                       (make-if (string (gensym "e"))))
+                   (make-= (string (gensym "s"))))))
+      (build-cfg
+       (loop :while (< stop-prob (random 1.0))
+             :while (not (zerop max-depth))
+             :append (list (build-random-ir)))))))
 
 (defclass edge () ())
 
