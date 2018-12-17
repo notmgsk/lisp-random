@@ -6,16 +6,12 @@
 (defvar *input* nil
   "The input language/IR")
 
-(setq *input* '((= x (+ y 1))
-                (= z (+ x 4))
-                (if e1
-                    (= z (* z 4))
-                    (= y 1))
-                (if e2
-                    (if e3
-                        (= p 4)
-                        (= l 1))
-                    (= v (1)))))
+(setq *input* '((if e1
+                    (if e2
+                        (= s1)
+                        (= s2))
+                    (= s3))
+                (= s4)))
 
 (defclass edge () ())
 
@@ -66,12 +62,13 @@
      (list (make-basic-block (list item)
                              :outgoing (make-unconditional-edge outgoing))))
     ((eq 'if (car item))
-     (destructuring-bind (c e ti fi) item
+     (destructuring-bind (c e ti &optional fi) item
        ;; TODO Stop returning lists everywerhe.
        (let ((tb (block-from-ir-item ti :outgoing outgoing))
              (fb (block-from-ir-item fi :outgoing outgoing)))
          (append (list (make-basic-block (list c e)
-                                         :outgoing (make-conditional-edge (car tb) (car fb) e)))
+                                         :outgoing
+                                         (make-conditional-edge (car tb) (if fb (car fb) outgoing) e)))
                  tb fb))))
     (t
      (error "U wot"))))
@@ -93,8 +90,10 @@
       (cond
         ((typep (outgoing block) 'conditional-edge)
          ;; TODO fix lists everywhere
-         (format s "~D -> ~D~%" id (id (true-block (outgoing block))))
-         (format s "~D -> ~D~%" id (id (false-block (outgoing block)))))               
+         (when (true-block (outgoing block))
+           (format s "~D -> ~D [label=true] ~%" id (id (true-block (outgoing block)))))
+         (when (false-block (outgoing block))
+           (format s "~D -> ~D [label=false] ~%" id (id (false-block (outgoing block))))))               
         (t
          (format s "~D -> ~D~%" id (id (to-block (outgoing block)))))))))
 
@@ -118,11 +117,6 @@
      (let* ((rest-cfg (build-cfg (rest ir)))
             (this-cfg (block-from-ir-item (first ir) :outgoing (first rest-cfg))))
        (append this-cfg rest-cfg)))))
-
-(defun build-cfg (ir)
-  (loop :for block :in ir
-        :for rem := (rest ir) :then (rest rem)
-        :append (block-from-ir-item block :outgoing (when rem (build-cfg rem)))))
 
 (defun save-cfg-graphviz (cfg fname)
   (with-open-file (s fname :direction :output :if-exists :supersede :if-does-not-exist :create)
