@@ -26,7 +26,7 @@
                 (= s5)))
 
 (defun make-random-cfg (max-nest max-depth)
-  (let* ((if-prob 0.5)
+  (let* ((if-prob 0.4)
          (if-single-prob 0.25)
          (stop-prob 0.1))
     (labels ((make-if (e)
@@ -62,13 +62,13 @@
 (defclass conditional-edge (edge)
   ((true-block :initarg :true-block :accessor true-block)
    (false-block :initarg :false-block :accessor false-block)
-   (condition :initarg :condition :accessor condition)))
+   (conditional :initarg :condition :accessor conditional)))
 
-(defun make-conditional-edge (true-block false-block condition)
+(defun make-conditional-edge (true-block false-block conditional)
   (make-instance 'conditional-edge
                  :true-block true-block
                  :false-block false-block
-                 :condition condition))
+                 :conditional conditional))
 
 ;; TODO unconditional subclass of conditional?
 (defclass unconditional-edge (edge)
@@ -84,6 +84,7 @@
    (outgoing :initarg :outgoing :accessor outgoing)
    (contents :initarg :contents :accessor contents :type cons)))
 
+;; TODO ???
 (let ((id 0))
   (defun make-basic-block (contents &key outgoing)
     ;; TODO Confirm that contents can be a basic block
@@ -102,9 +103,6 @@
 (defun block-from-ir-item (item &key outgoing)
   (cond
     ((null item) nil)
-    ((eq '= (car item))
-     (list (make-basic-block (list item)
-                             :outgoing (make-unconditional-edge outgoing))))
     ((eq 'if (car item))
      (destructuring-bind (c e ti &optional fi) item
        ;; TODO Stop returning lists everywerhe.
@@ -115,7 +113,8 @@
                                          (make-conditional-edge (car tb) (if fb (car fb) outgoing) e)))
                  tb fb))))
     (t
-     (error "U wot"))))
+     (list (make-basic-block (list item)
+                             :outgoing (make-unconditional-edge outgoing))))))
 
 (defun print-block (block &optional s)
   (loop :for item :in (contents block)
